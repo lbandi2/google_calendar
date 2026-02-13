@@ -1,8 +1,8 @@
 from dotenv import load_dotenv
 import os
 
-from gsetup import CredsTasks
-from task import AllTasks
+from .gsetup import CredsTasks
+from .task import AllTasks
 
 load_dotenv()
 

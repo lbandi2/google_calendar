@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
 
-from utils import parse_string, get_timezone, convert_date
+from .utils import parse_string, get_timezone, convert_date
 
 default1 = {'date': '2022-09-24'}
 default2 = {'dateTime': '2022-09-26T09:00:00-05:00', 'timeZone': 'America/Bogota'}

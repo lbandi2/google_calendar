@@ -1,11 +1,12 @@
 # from datetime import tzinfo
-from date import Date
-from status import Status
-from time_data import TimeData
+# import json
+from .date import Date
+from .status import Status
+from .time_data import TimeData
 
 
 class Event:
-    def __init__(self, event: dict, tz: str, is_break=False):
+    def __init__(self, event: dict, tz: str = None, is_break=False):
         self.id = event.get('id')
         self.start = self.parse_date(event.get('start'), tz) #TODO: implement localize to return offset aware datetimes
         self.end = self.parse_date(event.get('end'), tz)
@@ -16,8 +17,25 @@ class Event:
             self.title = 'Break'
         self.tz = tz
 
+    def as_dict(self):
+        return {
+            "title": self.title,
+            "start_time": self.start.time,
+            "end_time": self.end.time,
+            "start_date": self.start.date,
+            "end_date": self.start.date,
+            "start_datetime": self.start.date_long,
+            "end_datetime": self.end.date_long,
+            "location": self.location if self.location else '-',
+            "duration": self.time.duration(unit='minutes'),
+            "dow": self.start.day_of_week,
+            "is_current": self.status.is_ongoing,
+            "is_today": self.start.is_today,
+            "is_tomorrow": self.start.is_tomorrow,
+        }
+
     def __repr__(self):
-        return f"[{self.start.date}] {self.start.time}-{self.end.time}: {self.title} ({self.time.duration(unit='minutes')})"
+        return f"[{self.start.date}] {self.start.time}-{self.end.time}: {self.title.encode("utf-8")} ({self.time.duration(unit='minutes')})"
 
     @property
     def status(self):
@@ -55,11 +73,12 @@ class AllEvents:
         events = []
         for event_data in self.unparsed_events:
             event = Event(event_data, tz=self.tz)
-            if self.ignore_all_day_events:
-                if not event.status.is_all_day:
+            if not event.status.is_finished:
+                if self.ignore_all_day_events:
+                    if not event.status.is_all_day:
+                        events.append(event)
+                else:
                     events.append(event)
-            else:
-                events.append(event)
         if not self.allow_duplicates:
             events = self.remove_duplicates(events)
         return events
@@ -73,16 +92,26 @@ class AllEvents:
             event_obj = Event(
                     {
                         'start': 
-                            {'dateTime': event[0], 'timeZone': 'America/Bogota'}, 
+                            {'dateTime': event[0], 'timeZone': 'America/Bogota'},
                         'end': 
                             {'dateTime': event[1], 'timeZone': 'America/Bogota'}
-                    })
+                    }
+                )
 
             if event_obj.start.object >= event_obj.end.object or event_obj.end.time <= event_obj.start.time:
                 continue
             else:
                 breaks.append(event_obj)
         return breaks
+
+    # def remove_duplicates(self, list_of_events):
+    #     prev_titles = []
+    #     events = []
+    #     for item in list_of_events:
+    #         if item.title not in prev_titles:
+    #             prev_titles.append(item.title)
+    #             events.append(item)
+    #     return events
 
     def remove_duplicates(self, list_of_events):
         prev_titles = []
@@ -94,11 +123,16 @@ class AllEvents:
         return events
 
     @property
-    def all(self):
+    def _all(self):
         if not self.breaks:
             return self.calculate_events()
         else:
             return self.calculate_breaks()
+
+    @property
+    def all(self):
+        # return json.dumps([item.as_dict() for item in self.all], indent=4)
+        return [item.as_dict() for item in self._all]
 
     @property
     def total(self):
@@ -110,53 +144,101 @@ class AllEvents:
             total += event.time.duration(unit='hours')
         return total
 
+    # def get_event_filter(self, filter=None) -> object:
+    #     if filter == 'next':
+    #         next = [event for event in self.all if event.status.is_pending]
+    #         return next[0] if next else None
+    #     elif filter == 'ongoing':
+    #         ongoing = [event for event in self.all if event.status.is_ongoing]
+    #         return ongoing[0] if ongoing else None
+    #     elif filter == 'prev':
+    #         return self.finished[-1] if self.finished != [] else None
+    #     elif filter == 'today':
+    #         return [event for event in self.all if event.start.is_today]
+    #     elif filter == 'tomorrow':
+    #         return [event for event in self.all if event.start.is_tomorrow]
+    #     elif filter == 'finished':
+    #         return [event for event in self.all if event.status.is_finished]
+    #     elif filter == 'remaining':
+    #         return [event for event in self.all if not event.status.is_finished]
+    #     elif filter == 'remaining_today':
+    #         return [event for event in self.remaining if event.start.is_today and not event.status.is_finished]
+    #     elif filter == 'remaining_tomorrow':
+    #         return [event for event in self.remaining if event.start.is_tomorrow]
+    #     elif filter == 'this_week':
+    #         return [event for event in self.all if event.start.is_this_week]
+    #     elif filter == 'next_week':
+    #         return [event for event in self.all if event.start.is_next_week]
+    #     elif filter == 'today_first':
+    #         return self.today[0] if self.today != [] else None
+    #     elif filter == 'today_last':
+    #         return self.today[-1] if self.today != [] else None
+    #     elif filter == 'tomorrow_first':
+    #         return self.tomorrow[0] if self.tomorrow != [] else None
+    #     elif filter == 'tomorrow_last':
+    #         return self.tomorrow[-1] if self.tomorrow != [] else None
+    #     elif filter == 'rest':
+    #         if self.remaining_today != []:
+    #             return [
+    #                 event for event in self.all
+    #                 if event.start.is_today is False and 
+    #                 event.status.is_finished is False
+    #                 ]
+    #         elif self.remaining_tomorrow != []:
+    #             return [
+    #                 event for event in self.all 
+    #                 if event.start.is_tomorrow is False and
+    #                 event.status.is_finished is False
+    #                 ]
+    #         return [event for event in self.all if not event.status.is_finished]
+
     def get_event_filter(self, filter=None) -> object:
         if filter == 'next':
-            next = [event for event in self.all if event.status.is_pending]
-            return next[0] if next else None
+            events = [event.as_dict() for event in self._all if event.status.is_pending]
+            return [events[0]] if events else []
         elif filter == 'ongoing':
-            ongoing = [event for event in self.all if event.status.is_ongoing]
-            return ongoing[0] if ongoing else None
+            events = [event.as_dict() for event in self._all if event.status.is_ongoing]
+            return [events[0]] if events else []
         elif filter == 'prev':
-            return self.finished[-1] if self.finished != [] else None
+            return [self.finished[-1].as_dict()]
         elif filter == 'today':
-            return [event for event in self.all if event.start.is_today]
+            return [event.as_dict() for event in self._all if event.start.is_today]
         elif filter == 'tomorrow':
-            return [event for event in self.all if event.start.is_tomorrow]
+            return [event.as_dict() for event in self._all if event.start.is_tomorrow]
         elif filter == 'finished':
-            return [event for event in self.all if event.status.is_finished]
+            return [event.as_dict() for event in self._all if event.status.is_finished]
         elif filter == 'remaining':
-            return [event for event in self.all if not event.status.is_finished]
+            return [event for event in self._all if not event.status.is_finished]
         elif filter == 'remaining_today':
-            return [event for event in self.remaining if event.start.is_today and not event.status.is_finished]
+            return [event.as_dict() for event in self.remaining if event.start.is_today and not event.status.is_finished]
         elif filter == 'remaining_tomorrow':
-            return [event for event in self.remaining if event.start.is_tomorrow]
+            return [event.as_dict() for event in self.remaining if event.start.is_tomorrow]
         elif filter == 'this_week':
-            return [event for event in self.all if event.start.is_this_week]
+            return [event.as_dict() for event in self._all if event.start.is_this_week]
         elif filter == 'next_week':
-            return [event for event in self.all if event.start.is_next_week]
+            return [event.as_dict() for event in self._all if event.start.is_next_week]
         elif filter == 'today_first':
-            return self.today[0] if self.today != [] else None
+            return [self.today[0]]
         elif filter == 'today_last':
-            return self.today[-1] if self.today != [] else None
+            return [self.today[-1]]
         elif filter == 'tomorrow_first':
-            return self.tomorrow[0] if self.tomorrow != [] else None
+            return [self.tomorrow[0]]
         elif filter == 'tomorrow_last':
-            return self.tomorrow[-1] if self.tomorrow != [] else None
+            return [self.tomorrow[-1]]
         elif filter == 'rest':
             if self.remaining_today != []:
                 return [
-                    event for event in self.all
+                    event.as_dict() for event in self._all
                     if event.start.is_today is False and 
                     event.status.is_finished is False
                     ]
             elif self.remaining_tomorrow != []:
                 return [
-                    event for event in self.all 
+                    event.as_dict() for event in self._all 
                     if event.start.is_tomorrow is False and
                     event.status.is_finished is False
                     ]
-            return [event for event in self.all if not event.status.is_finished]
+            return [event.as_dict() for event in self._all if not event.status.is_finished]
 
     @property
     def ongoing(self) -> object:

@@ -1,9 +1,9 @@
 from dotenv import load_dotenv
 from googleapiclient.errors import HttpError
 
-from gsetup import CredsCalendar
-from event import AllEvents
-from time_data import Timer
+from .gsetup import CredsCalendar
+from .event import AllEvents
+from .time_data import Timer
 
 load_dotenv()
 

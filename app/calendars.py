@@ -1,15 +1,33 @@
 from dotenv import load_dotenv
 import os
 
-from google_calendar import Calendar
+from .google_calendar import Calendar
 
 load_dotenv()
 
 tz_bogota = 'America/Bogota'
 
 
-class Holidays(Calendar):
-    CAL = os.getenv('CAL_HOLIDAYS')
+class HolidaysCo(Calendar):
+    CAL = os.getenv('CAL_HOLIDAYS_CO')
+
+    def __init__(self, tz=tz_bogota):
+        super().__init__(cal_id=self.CAL, ignore_all_day_events=False, tz=tz)
+
+class HolidaysAr(Calendar):
+    CAL = os.getenv('CAL_HOLIDAYS_AR')
+
+    def __init__(self, tz=tz_bogota):
+        super().__init__(cal_id=self.CAL, ignore_all_day_events=False, tz=tz)
+
+class HolidaysUs(Calendar):
+    CAL = os.getenv('CAL_HOLIDAYS_US')
+
+    def __init__(self, tz=tz_bogota):
+        super().__init__(cal_id=self.CAL, ignore_all_day_events=False, tz=tz)
+
+class Viajes(Calendar):
+    CAL = os.getenv('CAL_VIAJES')
 
     def __init__(self, tz=tz_bogota):
         super().__init__(cal_id=self.CAL, ignore_all_day_events=False, tz=tz)
