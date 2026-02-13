@@ -40,6 +40,7 @@ class Calendar:
         self._cached_events = AllEvents(self.unparsed_events, tz=self.tz)
         self.timer.restart()
         return self._cached_events
+        # return {'events': self._cached_events}
 
     @property
     def breaks(self):
