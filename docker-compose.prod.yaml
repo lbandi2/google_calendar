@@ -1,0 +1,38 @@
+networks:
+  proxy:
+    external: true
+services:
+  api-google-calendar:
+    container_name: api-google-calendar
+    environment:
+    - PUID=568
+    - PGID=568
+    - TZ=America/Bogota
+    - CAL_NOSOTROS=${CAL_NOSOTROS}
+    - CAL_IM=${CAL_IM}
+    - CAL_HOLIDAYS_CO=${CAL_HOLIDAYS_CO}
+    - CAL_HOLIDAYS_US=${CAL_HOLIDAYS_US}
+    - CAL_HOLIDAYS_AR=${CAL_HOLIDAYS_AR}
+    - CAL_VELEZ=${CAL_VELEZ}
+    - CAL_WC=${CAL_WC}
+    - CAL_VIAJES=${CAL_VIAJES}
+    - TASKS_MAIN=${TASKS_MAIN}
+    - TASKS_COMPRAS=${TASKS_COMPRAS}
+    - TASKS_IOT=${TASKS_IOT}
+    image: lbandi2/api-google-calendar:latest
+    networks:
+    - proxy
+    ports:
+    - 10.10.15.10:${PORT}:80
+    restart: unless-stopped
+    labels:
+    # Homepage
+    - homepage.group=APIs
+    - homepage.name=Google Calendar
+    - homepage.icon=https://upload.wikimedia.org/wikipedia/commons/thumb/a/a5/Google_Calendar_icon_%282020%29.svg/500px-Google_Calendar_icon_%282020%29.svg.png
+    - homepage.href=http://10.10.15.10:${PORT}/docs
+    - homepage.description=Google Calendars
+    - homepage.target=_top
+    volumes:
+    - /mnt/colossus/App_Data/API-Google_Calendar/creds:/app/creds
+
